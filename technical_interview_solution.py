@@ -122,7 +122,7 @@ def combine_sales_with_asset_data(sales_results: pd.DataFrame, asset_data: pd.Da
     ]
     asset_portfolio_summary = asset_portfolio_summary.reset_index()
     
-    # Calculate portfolio age in years
+    # Calculate portfolio age in years. 365.25 is used to account for leap years.
     today = pd.Timestamp.now().date()
     asset_portfolio_summary['portfolio_age_years'] = asset_portfolio_summary['oldest_asset_date'].apply(
         lambda x: (today - x).days / 365.25
@@ -153,7 +153,7 @@ def combine_sales_with_asset_data(sales_results: pd.DataFrame, asset_data: pd.Da
 
 def create_consolidated_weekly_report(weekly_results: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
     """
-    Creates a consolidated report from weekly processed data.
+    Creates a consolidated report from all weekly processed data.
     
     For this function:
     1. Concatenate all weekly results into a single dataset
@@ -205,3 +205,45 @@ def create_consolidated_weekly_report(weekly_results: Dict[str, pd.DataFrame]) -
     summary['avg_revenue_per_mwh'] = summary['sales_amount'] / summary['MWh']
     
     return weekly_comparison, summary, all_weeks_data
+
+
+def run_pipeline(
+    weekly_results: Dict[str, pd.DataFrame],
+    asset_data: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Runs the entire sales data processing pipeline.
+    
+    This function:
+    1. Processes sales data in batches by week
+       (simulating a batched API call).
+    2. Combines each processed batch with asset data
+    3. Generates a consolidated report from all processed weeks and returns its results.
+    
+    Parameters:
+    -----------
+    weekly_results : Dict[str, pd.DataFrame]
+        Dict containing weekly sales data as if from a batched API call.
+    asset_data : pd.DataFrame
+        DataFrame containing asset data to be combined with sales data.
+        
+    Returns:
+    --------
+    tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]
+        - weekly_comparison: Pivot table comparing metrics across weeks
+        - summary: Overall summary across all weeks
+        - all_weeks_data: Complete consolidated dataset
+    """
+    processed_weekly_results = {}
+    for week in weekly_results:
+        processed_weekly_data = process_sales_batch(weekly_results[week])
+        combined_weekly_results = combine_sales_with_asset_data(processed_weekly_data, asset_data)
+        processed_weekly_results[week] = combined_weekly_results
+        print(f"Combined with Asset data for week: {week}")
+
+    print(f"Processed data for {len(processed_weekly_results)} weeks")
+    weekly_comparison, summary, all_weeks_data = create_consolidated_weekly_report(processed_weekly_results)
+    return weekly_comparison, summary, all_weeks_data
+
+
+
