@@ -7,19 +7,24 @@ def create_sample_data():
     Create three sample DataFrames to simulate different data sources.
     In a real scenario, these would be much larger datasets.
     """
+    # Set a fixed random seed for reproducibility
+    np.random.seed(1)
+    
     hours_in_four_weeks = 4 * 7 * 24
+    
+    # Define a fixed set of portfolio_ids to use in both DataFrames
+    portfolio_ids = ['A001', 'B002', 'C003']
     
     sales_data = pd.DataFrame({
         'date': pd.date_range(start='2023-01-01', periods=hours_in_four_weeks, freq='h'),
-        'portfolio_id': np.random.choice(['A001', 'B002', 'C003', 'D004'], size=hours_in_four_weeks),
+        'portfolio_id': np.random.choice(portfolio_ids, size=hours_in_four_weeks),
         'asset_type': np.random.choice(['Wind', 'Solar', 'Gas'], size=hours_in_four_weeks),
         'MWh': np.random.randint(1, 50, size=hours_in_four_weeks),
         'price': np.random.uniform(10, 200, size=hours_in_four_weeks).round(2),
     })
     
-    # Data source 2: Asset Data
     asset_data = pd.DataFrame({
-        'portfolio_id': np.random.choice(['A001', 'B002', 'C003', 'D004'], size=12),
+        'portfolio_id': np.random.choice(['A001', 'B002', 'C003'], size=12),
         'geography': np.random.choice(['North', 'South', 'East', 'West'], size=12),
         'asset_id': ['Asset_{:02d}'.format(i) for i in range(1, 13)],
         'ISO': np.random.choice(['North', 'South', 'East', 'West'], size=12),

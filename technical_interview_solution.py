@@ -5,16 +5,17 @@ Technical Interview: Data Batching and Transformation Exercise
    This function should process a batch of sales data, performing aggregation and calculations.
 
 2. For both `combine_sales_with_asset_data()` and `create_consolidated_weekly_report()` functions:
-   - Explain the purpose of the function and its parameters.
-   - Identify any potential issues or improvements you would make to the existing code.
+   - Explain the purpose of the function and its parameters to us.
+   - Write a docstring and type hints for these functions.
 
-3. Create a new function called `run_pipeline(weekly_results: Dict[str, pd.DataFrame])` that:
+3. Create a new function called `run_pipeline()` that:
    - Processes the sales data in appropriate batches (e.g., by week)
    - Combines each processed batch with asset data
    - Generates a consolidated report from all processed weeks
    - Returns the complete results dictionary
 
-5. (Bonus) Implement a simple test using `pytest` for process_sales_batch() to validate its functionality.
+
+4. (Bonus) Implement a simple test using `pytest` for process_sales_batch() to validate its functionality.
 """
 
 import pandas as pd
@@ -64,7 +65,11 @@ def process_sales_batch(sales_data: pd.DataFrame) -> pd.DataFrame:
     
     return grouped
 
-def combine_sales_with_asset_data(sales_results: pd.DataFrame, asset_data: pd.DataFrame, target_tz: str = None) -> pd.DataFrame:
+def combine_sales_with_asset_data(
+    sales_results: pd.DataFrame, 
+    asset_data: pd.DataFrame, 
+    target_tz: str = None
+) -> pd.DataFrame:
     """
     Combines the processed sales data with asset information.
     
@@ -151,7 +156,9 @@ def combine_sales_with_asset_data(sales_results: pd.DataFrame, asset_data: pd.Da
     return combined_data
 
 
-def create_consolidated_weekly_report(weekly_results: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
+def create_consolidated_weekly_report(
+        weekly_data: Dict[str, pd.DataFrame]
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Creates a consolidated report from all weekly processed data.
     
@@ -164,23 +171,19 @@ def create_consolidated_weekly_report(weekly_results: Dict[str, pd.DataFrame]) -
     
     Parameters:
     -----------
-    weekly_results : Dict[str, pd.DataFrame]
+    weekly_data : Dict[str, pd.DataFrame]
         Dictionary containing processed data for each week
         Keys: Week identifiers (e.g., '2023-01', '2023-02')
         Values: DataFrames with the processed and combined data for each week
         
     Returns:
     --------
-    Dict[str, pd.DataFrame]
-        Dictionary containing different views of the consolidated data:
+    tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]
         - weekly_comparison: Pivot table comparing metrics across weeks
         - summary: Overall summary across all weeks
         - all_data: Complete consolidated dataset
-    """
-    if not weekly_results:
-        return {"error": "No weekly data provided"}
-    
-    all_weeks_data = pd.concat(weekly_results.values(), ignore_index=True)
+    """    
+    all_weeks_data = pd.concat(weekly_data.values(), ignore_index=True)
     
     weekly_comparison = pd.pivot_table(
         all_weeks_data, 
@@ -201,7 +204,7 @@ def create_consolidated_weekly_report(weekly_results: Dict[str, pd.DataFrame]) -
         'portfolio_age_years': 'first'
     }).reset_index()
     
-    summary['avg_weekly_revenue'] = summary['sales_amount'] / len(weekly_results)
+    summary['avg_weekly_revenue'] = summary['sales_amount'] / len(weekly_data)
     summary['avg_revenue_per_mwh'] = summary['sales_amount'] / summary['MWh']
     
     return weekly_comparison, summary, all_weeks_data
