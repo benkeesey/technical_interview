@@ -73,13 +73,11 @@ def combine_sales_with_asset_data(
     Combines the processed sales data with asset information.
     
     For this function:
-    1. Convert all datetime data to UTC for consistent processing
-    2. Aggregate asset data by portfolio_id to get portfolio-level metrics
-    3. Calculate portfolio statistics (asset count, primary geography, ISO regions, timezones)
-    4. Calculate portfolio age based on operational dates
-    5. Merge sales results with asset portfolio summary
-    6. Calculate per-asset and efficiency metrics
-    7. Optionally convert all datetime data to a specified target timezone
+    1. Aggregate asset data by portfolio_id to get portfolio-level metrics
+    2. Calculate portfolio statistics (asset count, primary geography, ISO regions, timezones)
+    3. Calculate portfolio age based on operational dates
+    4. Merge sales results with asset portfolio summary
+    5. Calculate per-asset and efficiency metrics
 
     Parameters:
     -----------
