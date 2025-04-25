@@ -68,7 +68,6 @@ def process_sales_batch(sales_data: pd.DataFrame) -> pd.DataFrame:
 def combine_sales_with_asset_data(
     sales_results: pd.DataFrame, 
     asset_data: pd.DataFrame, 
-    target_tz: str = None
 ) -> pd.DataFrame:
     """
     Combines the processed sales data with asset information.
@@ -94,23 +93,12 @@ def combine_sales_with_asset_data(
         - ISO: Independent System Operator region
         - operational_date: Date when the asset became operational
         - timezone: Timezone where the asset is located
-    target_tz : str, optional
-        Target timezone to convert datetime data to (e.g., 'US/Pacific', 'US/Eastern')
-        If None, keeps data in UTC
         
     Returns:
     --------
     pd.DataFrame
-        Combined dataframe with sales metrics and asset details in the specified timezone
+        Combined dataframe with sales metrics and asset details
     """
-    # First, convert any datetime columns in sales_results to UTC if they exist
-    datetime_cols = [col for col in sales_results.columns if sales_results[col].dtype == 'datetime64[ns]']
-    for col in datetime_cols:
-        if pd.api.types.is_datetime64_any_dtype(sales_results[col]):
-            if sales_results[col].dt.tz is None:
-                sales_results[col] = sales_results[col].dt.tz_localize('UTC')
-            else:
-                sales_results[col] = sales_results[col].dt.tz_convert('UTC')
     
     # Agg asset data by portfolio_id to get portfolio-level metrics
     asset_portfolio_summary = asset_data.groupby('portfolio_id').agg({
@@ -143,24 +131,16 @@ def combine_sales_with_asset_data(
     combined_data['mwh_per_asset'] = combined_data['MWh'] / combined_data['asset_count']
     combined_data['revenue_per_asset'] = combined_data['sales_amount'] / combined_data['asset_count']
     combined_data['revenue_per_mwh'] = combined_data['sales_amount'] / combined_data['MWh']
-    
-    # Convert to target timezone if specified
-    if target_tz:
-        for col in datetime_cols:
-            if pd.api.types.is_datetime64_any_dtype(combined_data[col]):
-                combined_data[col] = combined_data[col].dt.tz_convert(target_tz)
-                
-        # Add a column indicating the target timezone
-        combined_data['target_timezone'] = target_tz
+
     
     return combined_data
 
 
 def create_consolidated_weekly_report(
-        weekly_data: Dict[str, pd.DataFrame]
+        combined_weekly_data: Dict[str, pd.DataFrame]
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    Creates a consolidated report from all weekly processed data.
+    Creates a consolidated report by combining all batches of processed weekly data. 
     
     For this function:
     1. Concatenate all weekly results into a single dataset
@@ -168,11 +148,13 @@ def create_consolidated_weekly_report(
     3. Calculate summary statistics across all weeks
     4. Calculate average weekly metrics and efficiency indicators
     5. Package results into different report views
-    
+
     Parameters:
     -----------
     weekly_data : Dict[str, pd.DataFrame]
-        Dictionary containing processed data for each week
+        Dictionary containing processed data
+        for each week of data after having been processed by the
+        `process_sales_batch` and `combine_sales_with_asset_data` funcation.
         Keys: Week identifiers (e.g., '2023-01', '2023-02')
         Values: DataFrames with the processed and combined data for each week
         
@@ -182,8 +164,8 @@ def create_consolidated_weekly_report(
         - weekly_comparison: Pivot table comparing metrics across weeks
         - summary: Overall summary across all weeks
         - all_data: Complete consolidated dataset
-    """    
-    all_weeks_data = pd.concat(weekly_data.values(), ignore_index=True)
+    """  
+    all_weeks_data = pd.concat(combined_weekly_data.values(), ignore_index=True)
     
     weekly_comparison = pd.pivot_table(
         all_weeks_data, 
@@ -199,12 +181,12 @@ def create_consolidated_weekly_report(
         'sales_amount': 'sum',
         'transaction_count': 'sum',
         'price': 'mean',
-        'asset_count': 'first',  # These values should be the same across weeks
+        'asset_count': 'first', # These values should be the same across weeks
         'primary_geography': 'first',
         'portfolio_age_years': 'first'
     }).reset_index()
     
-    summary['avg_weekly_revenue'] = summary['sales_amount'] / len(weekly_data)
+    summary['avg_weekly_revenue'] = summary['sales_amount'] / len(combined_weekly_data)
     summary['avg_revenue_per_mwh'] = summary['sales_amount'] / summary['MWh']
     
     return weekly_comparison, summary, all_weeks_data
